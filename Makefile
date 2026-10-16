@@ -6,8 +6,8 @@
 # ---- Package identity (fixed) ----
 TITLE       := Gameclub
 VERSION     := 01.00
-TITLE_ID    := GAMEC00001
-CONTENT_ID  := IV0000-GAMEC0001_00-GAMECLUB00000000
+TITLE_ID    := BREW00001
+CONTENT_ID  := IV0000-BREW00001_00-HOMEBREW00000000
 EXTRAFLAGS  :=
 
 # ---- Toolchain / paths (don't usually need to touch) ----
