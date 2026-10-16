@@ -34,34 +34,33 @@ struct PadState {
 static const int W = 1920;
 static const int H = 1080;
 
-static uint32_t* buffers[2];
+static uint32_t* buffers[2] = {};
 static int videoHandle = -1;
 static int padHandle = -1;
 static int currentBuffer = 0;
 
-static const uint32_t BG      = 0xFF0B0D18;
-static const uint32_t PANEL   = 0xFF202538;
-static const uint32_t PANEL2  = 0xFF2A3045;
-static const uint32_t PURPLE  = 0xFFA855F7;
-static const uint32_t PINK    = 0xFFFF4D8D;
-static const uint32_t CYAN    = 0xFF35D8F2;
-static const uint32_t WHITE   = 0xFFF5F7FF;
-static const uint32_t MUTED   = 0xFF98A4B8;
-static const uint32_t BORDER  = 0xFF414A60;
+static const uint32_t BG     = 0xFF0B0D18;
+static const uint32_t PANEL  = 0xFF202538;
+static const uint32_t PANEL2 = 0xFF2A3045;
+static const uint32_t PURPLE = 0xFFA855F7;
+static const uint32_t PINK   = 0xFFFF4D8D;
+static const uint32_t CYAN   = 0xFF35D8F2;
+static const uint32_t WHITE  = 0xFFF5F7FF;
+static const uint32_t MUTED  = 0xFF98A4B8;
+static const uint32_t BORDER = 0xFF414A60;
 
 static void rectangle(int x, int y, int w, int h, uint32_t color) {
-    if (!buffers[currentBuffer] || w <= 0 || h <= 0) return;
+    if (!buffers[currentBuffer] || w <= 0 || h <= 0)
+        return;
 
     int x0 = x < 0 ? 0 : x;
     int y0 = y < 0 ? 0 : y;
     int x1 = x + w > W ? W : x + w;
     int y1 = y + h > H ? H : y + h;
 
-    for (int yy = y0; yy < y1; ++yy) {
-        for (int xx = x0; xx < x1; ++xx) {
+    for (int yy = y0; yy < y1; ++yy)
+        for (int xx = x0; xx < x1; ++xx)
             buffers[currentBuffer][yy * W + xx] = color;
-        }
-    }
 }
 
 static void outline(int x, int y, int w, int h, uint32_t color) {
@@ -71,7 +70,7 @@ static void outline(int x, int y, int w, int h, uint32_t color) {
     rectangle(x + w - 3, y, 3, h, color);
 }
 
-/* 5x7 bitmap font */
+/* 5x7 bitmap font: A-Z, 0-9, colon and space */
 static const uint8_t font[][5] = {
     {126,17,17,17,126}, {127,73,73,73,54},
     {62,65,65,65,34}, {127,65,65,34,28},
@@ -111,15 +110,12 @@ static void drawText(int x, int y, const char* text,
 
         int index = characterIndex(c);
 
-        for (int col = 0; col < 5; ++col) {
-            for (int row = 0; row < 7; ++row) {
-                if (font[index][col] & (1 << row)) {
+        for (int col = 0; col < 5; ++col)
+            for (int row = 0; row < 7; ++row)
+                if (font[index][col] & (1 << row))
                     rectangle(x + col * scale,
                               y + row * scale,
                               scale, scale, color);
-                }
-            }
-        }
 
         x += 6 * scale;
     }
@@ -144,16 +140,14 @@ static bool initializeVideo() {
 
     if (sceKernelAllocateDirectMemory(
             0, sceKernelGetDirectMemorySize(),
-            total, alignment, 3, &offset) < 0) {
+            total, alignment, 3, &offset) < 0)
         return false;
-    }
 
     void* base = 0;
 
     if (sceKernelMapDirectMemory(
-            &base, total, 0x33, 0, offset, alignment) < 0) {
+            &base, total, 0x33, 0, offset, alignment) < 0)
         return false;
-    }
 
     buffers[0] = static_cast<uint32_t*>(base);
     buffers[1] = reinterpret_cast<uint32_t*>(
@@ -164,13 +158,12 @@ static bool initializeVideo() {
     sceVideoOutSetBufferAttribute(
         &attributes, 0x80000000u, 1, 0, W, H, W);
 
-    void* registeredBuffers[2] = { buffers[0], buffers[1] };
+    void* registeredBuffers[2] = {buffers[0], buffers[1]};
 
     if (sceVideoOutRegisterBuffers(
             videoHandle, 0, registeredBuffers, 2,
-            &attributes) != 0) {
+            &attributes) != 0)
         return false;
-    }
 
     sceVideoOutSetFlipRate(videoHandle, 0);
     return true;
@@ -184,19 +177,63 @@ static void presentFrame() {
 
 static void drawBrand() {
     rectangle(0, 0, W, 12, PURPLE);
-
     drawText(100, 65, "GAMECLUB", 8, WHITE);
     drawText(105, 145, "PS4 GAMING HUB", 3, CYAN);
-
     rectangle(100, 200, 1720, 2, BORDER);
     drawText(1510, 82, "FIRMWARE 9.00", 2, MUTED);
+}
+
+/* Welcome dialog */
+static void drawWelcomeDialog() {
+    clearScreen(BG);
+    rectangle(0, 0, W, 12, PURPLE);
+
+    drawText(100, 65, "GAMECLUB", 6, WHITE);
+
+    rectangle(300, 260, 1320, 570, PANEL);
+    outline(300, 260, 1320, 570, PURPLE);
+
+    drawText(520, 330, "WELCOME TO GAMECLUB", 4, WHITE);
+    rectangle(420, 405, 1080, 3, BORDER);
+
+    drawText(460, 465, "CREATED BY", 3, CYAN);
+    drawText(460, 520, "ALI ASGHAR MEHRI", 4, WHITE);
+
+    drawText(460, 610, "PROGRAMMING TEAM", 3, CYAN);
+    drawText(460, 665, "PQAR0011", 4, PINK);
+
+    rectangle(560, 740, 800, 65, PURPLE);
+    drawText(700, 760, "PRESS X TO CONTINUE", 2, WHITE);
+
+    presentFrame();
+}
+
+static void showWelcomeDialog() {
+    uint32_t previousButtons = 0;
+
+    while (true) {
+        drawWelcomeDialog();
+
+        PadState pad = {};
+
+        if (padHandle >= 0 &&
+            scePadReadState(padHandle, &pad) == 0) {
+            uint32_t pressed = pad.buttons & ~previousButtons;
+            previousButtons = pad.buttons;
+
+            if (pressed & 0x4000u)
+                break;
+        }
+
+        sceKernelUsleep(16000);
+    }
 }
 
 static void loadingScreen() {
     const char* stages[] = {
         "INITIALIZING GAMECLUB",
         "CHECKING LOCAL SYSTEM",
-        "CONNECTING TO GAMECLUB"
+        "STARTING GAMECLUB"
     };
 
     for (int stage = 0; stage < 3; ++stage) {
@@ -212,7 +249,6 @@ static void loadingScreen() {
                       12, stage == 2 ? PINK : PURPLE);
 
             drawText(820, 590, "PLEASE WAIT", 2, MUTED);
-
             presentFrame();
         }
     }
@@ -233,24 +269,12 @@ static const char* statusMessage = "READY TO PLAY";
 
 static void selectMenuItem() {
     switch (selected) {
-        case 0:
-            statusMessage = "MY GAMES: LOCAL DEMO";
-            break;
-        case 1:
-            statusMessage = "GAME STORE: COMING SOON";
-            break;
-        case 2:
-            statusMessage = "THEMES: COMING SOON";
-            break;
-        case 3:
-            statusMessage = "STREAM: DEMO MODE";
-            break;
-        case 4:
-            statusMessage = "STREAM KEY: DEMO";
-            break;
-        default:
-            statusMessage = "GAMECLUB TEST BUILD";
-            break;
+        case 0: statusMessage = "MY GAMES: LOCAL DEMO"; break;
+        case 1: statusMessage = "GAME STORE: COMING SOON"; break;
+        case 2: statusMessage = "THEMES: COMING SOON"; break;
+        case 3: statusMessage = "STREAM: DEMO MODE"; break;
+        case 4: statusMessage = "STREAM KEY: DEMO"; break;
+        default: statusMessage = "CREATED BY ALI ASGHAR MEHRI"; break;
     }
 }
 
@@ -282,9 +306,7 @@ static void drawMenu() {
 
     drawText(745, 310, "WELCOME TO GAMECLUB", 4, WHITE);
     drawText(745, 380, "YOUR GAMES YOUR STREAM", 3, CYAN);
-
     rectangle(745, 455, 1000, 2, BORDER);
-
     drawText(745, 500, "SELECT AN OPTION", 3, MUTED);
     drawText(745, 550, "PRESS X TO OPEN", 2, PINK);
 
@@ -294,7 +316,6 @@ static void drawMenu() {
     drawText(735, 875, "FIRST TEST BUILD", 2, MUTED);
 
     rectangle(100, 980, 1720, 2, BORDER);
-
     drawText(100, 1010, "UP DOWN MOVE", 2, MUTED);
     drawText(500, 1010, "X SELECT", 2, MUTED);
     drawText(800, 1010, "O BACK", 2, MUTED);
@@ -305,18 +326,21 @@ static void drawMenu() {
 
 int main() {
     if (!initializeVideo()) {
-        while (1)
-            sceKernelUsleep(1000000);
+        // جلوگیری از حلقه بی‌نهایت در نسخه آزمایشی.
+        return 1;
     }
 
-    scePadInit();
-    padHandle = scePadOpen(0, 0, 0, 0);
+    if (scePadInit() >= 0)
+        padHandle = scePadOpen(0, 0, 0, 0);
 
     loadingScreen();
 
+    // پیام معرفی سازنده در شروع برنامه
+    showWelcomeDialog();
+
     uint32_t previousButtons = 0;
 
-    while (1) {
+    while (true) {
         PadState pad = {};
 
         if (padHandle >= 0 &&
@@ -325,7 +349,6 @@ int main() {
             uint32_t pressed = pad.buttons & ~previousButtons;
             previousButtons = pad.buttons;
 
-            // Controller button mappings should be verified on hardware.
             if (pressed & 0x0010u) {
                 selected = (selected + MENU_COUNT - 1) % MENU_COUNT;
                 statusMessage = "READY TO PLAY";
